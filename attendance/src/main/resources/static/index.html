@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Attendance Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#eef1f6;--panel:#fff;--ink:#16202e;--mute:#66758a;--line:#dde3ec;--acc:#2f5bea;--acc-d:#2547bd;--ok:#12805c;--okb:#dcf3ea;--bad:#c23b3b;--badb:#fbe3e3;--late:#a8620a;--lateb:#fdefd6;--side:#111a2b}
+        *{box-sizing:border-box}
+        body{margin:0;font:14px/1.5 'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh}
+        aside{width:236px;background:var(--side);color:#c5cee0;padding:22px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+        .brand{color:#fff;font-weight:700;font-size:17px;padding:0 10px 18px}
+        .brand small{display:block;font-weight:400;font-size:12px;color:#8391ab}
+        nav button{all:unset;box-sizing:border-box;width:100%;padding:9px 12px;border-radius:8px;cursor:pointer;display:flex;gap:10px;align-items:center}
+        nav button:hover{background:#1c2940}
+        nav button.on{background:var(--acc);color:#fff}
+        nav button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+        .api{margin-top:auto;padding:10px;font-size:12px}
+        .api input{width:100%;margin-top:6px;background:#1c2940;border:1px solid #2b3b58;color:#fff;border-radius:6px;padding:7px 8px;font:inherit}
+        .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#777;margin-right:6px}
+        .dot.up{background:#3ecf8e}.dot.down{background:#f0616d}
+        main{flex:1;padding:28px 34px;min-width:0}
+        header.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+        h1{font-size:24px;margin:0;letter-spacing:-.02em}
+        .sub{color:var(--mute);margin:2px 0 0}
+        .tools{display:flex;gap:8px;flex-wrap:wrap}
+        .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font:600 13px inherit;font-family:inherit;cursor:pointer;color:var(--ink)}
+        .btn:hover{border-color:#b8c3d4}
+        .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}.btn.pri:hover{background:var(--acc-d)}
+        .btn.del{color:var(--bad)}.btn.sm{padding:4px 10px;font-size:12px}
+        .card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+        .stat{padding:16px 18px}.stat b{display:block;font-size:30px;letter-spacing:-.02em}.stat span{color:var(--mute)}
+        .bar{height:10px;border-radius:6px;background:var(--line);overflow:hidden;display:flex;margin-top:10px}
+        .bar i{display:block;height:100%}
+        .filters{padding:12px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
+        input,select{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;color:var(--ink);min-width:0}
+        .wrap{overflow-x:auto}
+        table{width:100%;border-collapse:collapse}
+        th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+        th{font-weight:600;color:var(--mute);font-size:13px;background:#f8fafc}
+        tr:last-child td{border-bottom:0}
+        td.act{text-align:right;width:1%}td.act .btn{margin-left:4px}
+        .badge{padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
+        .PRESENT{background:var(--okb);color:var(--ok)}.ABSENT{background:var(--badb);color:var(--bad)}.LATE{background:var(--lateb);color:var(--late)}
+        .empty{padding:44px 20px;text-align:center;color:var(--mute)}
+        dialog{border:0;border-radius:14px;padding:0;width:min(440px,92vw);box-shadow:0 24px 70px rgba(15,25,45,.3)}
+        dialog::backdrop{background:rgba(15,25,45,.5)}
+        dialog form{padding:22px}
+        dialog h2{margin:0 0 14px;font-size:18px}
+        label{display:block;font-weight:600;font-size:13px;margin-bottom:12px}
+        label input,label select{width:100%;margin-top:5px;font-weight:400}
+        .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+        #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:9}
+        .t{background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;max-width:340px}.t.err{background:var(--bad)}
+        .skel{padding:30px;text-align:center;color:var(--mute)}
+        @media(max-width:820px){body{flex-direction:column}aside{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;padding:12px}.brand{padding:0 8px 0 0}.api{display:none}nav{display:flex;gap:4px;flex-wrap:wrap}nav button{width:auto}main{padding:18px 14px}}
+        @media(prefers-reduced-motion:no-preference){dialog[open]{animation:pop .16s ease-out}@keyframes pop{from{transform:translateY(8px);opacity:0}}}
+    </style>
+</head>
+<body>
+<aside>
+    <div class="brand">Attendance Console<small>Sessions, students, records</small></div>
+    <nav id="nav"></nav>
+    <div class="api"><span class="dot" id="dot"></span><span id="apiState">Checking API</span>
+        <input id="base" aria-label="API base URL" value="http://localhost:8080"></div>
+</aside>
+<main>
+    <header class="top"><div><h1 id="title"></h1><p class="sub" id="sub"></p></div><div class="tools" id="tools"></div></header>
+    <section id="view"></section>
+</main>
+<dialog id="dlg"><form id="form" method="dialog"></form></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+    /* ---------- Configuration: adjust field names to match your DTOs ---------- */
+    const STATUSES = ['PRESENT','ABSENT','LATE'];
+    const ENT = {
+        subjects:  {label:'Subjects', one:'subject', path:'/subjects', fields:[
+                {k:'name',l:'Name',t:'text',req:1},{k:'code',l:'Code',t:'text'}]},
+        students:  {label:'Students', one:'student', path:'/students', fields:[
+                {k:'name',l:'Full name',t:'text',req:1},{k:'email',l:'Email',t:'email'},{k:'rollNumber',l:'Roll number',t:'text'}]},
+        sessions:  {label:'Sessions', one:'session', path:'/sessions', fields:[
+                {k:'subjectId',l:'Subject',t:'fk',ref:'subjects',req:1},{k:'date',l:'Date',t:'date',req:1},{k:'topic',l:'Topic',t:'text'}]},
+        attendance:{label:'Attendance', one:'attendance record', path:'/attendance', fields:[
+                {k:'studentId',l:'Student',t:'fk',ref:'students',req:1},{k:'sessionId',l:'Session',t:'fk',ref:'sessions',req:1},
+                {k:'status',l:'Status',t:'status',req:1}]}
+    };
+    /* Converts form values into the JSON body sent to the API */
+    const toPayload = (e, v) => v;
+
+    /* ---------- Helpers ---------- */
+    const $ = s => document.querySelector(s);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const base = () => $('#base').value.replace(/\/+$/,'');
+    const cache = {};
+    let cur = 'overview', filter = {type:'all',id:''};
+
+    function toast(msg, err){const d=document.createElement('div');d.className='t'+(err?' err':'');d.textContent=msg;$('#toast').append(d);setTimeout(()=>d.remove(),3400)}
+    async function api(path, opt={}){
+        let r;
+        try{ r = await fetch(base()+path, {...opt, headers: opt.body ? {'Content-Type':'application/json'} : {}}); }
+        catch{ throw new Error('Request blocked, most likely by CORS. The server must allow GET, POST, PUT, DELETE and OPTIONS from this page.'); }
+        if(!r.ok){let m='';try{m=(await r.text()).slice(0,200)}catch{}throw new Error(`${r.status} ${r.statusText} ${m}`.trim())}
+        const t = await r.text(); return t ? JSON.parse(t) : null;
+    }
+    const rid=(r,k)=>r.id??r[ENT[k].one.split(' ')[0]+'Id']??r.attendanceRecordId??r.recordId;
+    const list = async (k, p) => { const d = await api(p || ENT[k].path); const rows = Array.isArray(d) ? d : (d?.content || []);
+        rows.forEach(r=>{ if(r.id==null) r.id=rid(r,k); }); return rows; };
+    let spec=null;
+    const deref=o=>o?.$ref ? spec.components.schemas[o.$ref.split('/').pop()] : o;
+    function formFields(k){
+        try{
+            const s=deref(spec.paths[ENT[k].path].post.requestBody.content['application/json'].schema), out=[];
+            for(const [n,p0] of Object.entries(s.properties||{})){
+                if(n==='id') continue; const p=deref(p0);
+                const f={k:n,l:head(n),req:(s.required||[]).includes(n)?1:0,t:'text'};
+                const m={student:'students',subject:'subjects',session:'sessions'}[n.replace(/Id$/,'')];
+                if(p0.$ref&&m){f.t='fk';f.ref=m;f.nested=1}
+                else if(m&&/Id$/.test(n)){f.t='fk';f.ref=m}
+                else if(p.enum){f.t='enum';f.opts=p.enum}
+                else if(p.format==='date') f.t='date';
+                else if(p.format==='date-time') f.t='datetime-local';
+                else if(p.format==='time') f.t='time';
+                else if(p.type==='integer'||p.type==='number') f.t='number';
+                else if(/email/i.test(n)) f.t='email';
+                out.push(f);
+            }
+            if(out.length) return out;
+        }catch{}
+        return ENT[k].fields.map(f=>({...f,both:1}));
+    }
+    function label(o){ if(o==null) return ''; if(typeof o!=='object') return o;
+        return o.name || o.code || o.topic || o.title || (o.id!=null ? '#'+o.id : JSON.stringify(o)); }
+    function fkLabel(ref, id){ const o=(cache[ref]||[]).find(x=>String(x.id)===String(id)); return o ? label(o) : '#'+id; }
+    function sessionName(o){ const sub = o.subject ? label(o.subject) : (o.subjectId!=null ? fkLabel('subjects',o.subjectId) : '');
+        return [sub, o.date, o.topic].filter(Boolean).join(' · ') || '#'+o.id; }
+    function cell(key, val, row){
+        if(key==='status') return `<span class="badge ${esc(val)}">${esc(val)}</span>`;
+        if(key==='studentId') return esc(fkLabel('students',val));
+        if(key==='sessionId') return esc(fkLabel('sessions',val));
+        if(key==='subjectId') return esc(fkLabel('subjects',val));
+        if(val && typeof val==='object') return esc(key==='session' ? sessionName(val) : label(val));
+        return esc(val);
+    }
+    const head = k => k.replace(/([A-Z])/g,' $1').replace(/Id$/,'').replace(/^./,c=>c.toUpperCase());
+
+    async function loadRefs(){
+        if(!spec){ try{ spec=await api('/v3/api-docs') }catch{} }
+        await Promise.all(['subjects','students','sessions'].map(async k => { try{cache[k]=await list(k)}catch{cache[k]=cache[k]||[]} }));
+        cache.sessions.forEach(s=>s._n=sessionName(s));
+    }
+
+    /* ---------- Views ---------- */
+    function nav(){
+        const items=[['overview','Overview'],...Object.entries(ENT).map(([k,e])=>[k,e.label])];
+        $('#nav').innerHTML = items.map(([k,l])=>`<button data-k="${k}" class="${k===cur?'on':''}">${l}</button>`).join('');
+        $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{cur=b.dataset.k;filter={type:'all',id:''};render()});
+    }
+    async function render(){
+        nav(); $('#view').innerHTML='<div class="skel">Loading…</div>';
+        try{ await loadRefs(); setApi(true);
+            cur==='overview' ? await overview() : await table(cur);
+        }catch(e){ setApi(false); $('#view').innerHTML=`<div class="card empty"><b>Can't reach the API</b><br>Check that the server is running at ${esc(base())} and that CORS allows this page.<br><small>${esc(e.message)}</small></div>`; }
+    }
+    function setApi(ok){ $('#dot').className='dot '+(ok?'up':'down'); $('#apiState').textContent = ok?'API connected':'API unreachable'; }
+
+    async function overview(){
+        $('#title').textContent='Overview'; $('#sub').textContent='A snapshot of today’s attendance data.'; $('#tools').innerHTML='';
+        const att = await list('attendance');
+        const c = s => att.filter(a=>a.status===s).length, n=att.length||1;
+        const rate = att.length ? Math.round((c('PRESENT')+c('LATE'))/att.length*100)+'%' : '–';
+        $('#view').innerHTML = `<div class="stats">
+    <div class="card stat"><b>${cache.students.length}</b><span>Students</span></div>
+    <div class="card stat"><b>${cache.subjects.length}</b><span>Subjects</span></div>
+    <div class="card stat"><b>${cache.sessions.length}</b><span>Sessions</span></div>
+    <div class="card stat"><b>${rate}</b><span>Attendance rate</span></div></div>
+    <div class="card" style="padding:18px 20px;margin-bottom:18px"><b>Status breakdown</b>
+      <div class="bar"><i style="width:${c('PRESENT')/n*100}%;background:var(--ok)"></i><i style="width:${c('LATE')/n*100}%;background:#e5a336"></i><i style="width:${c('ABSENT')/n*100}%;background:var(--bad)"></i></div>
+      <p class="sub">${c('PRESENT')} present, ${c('LATE')} late, ${c('ABSENT')} absent across ${att.length} records.</p></div>
+    <div class="card"><div class="wrap">${grid(att.slice(-6).reverse(),'attendance',false)}</div></div>`;
+    }
+
+    function grid(rows, k, actions=true){
+        if(!rows.length) return `<div class="empty">Nothing here yet. ${actions?`Use “Add ${ENT[k].one}” to create the first one.`:''}</div>`;
+        const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))].filter(x=>x!=='_n');
+        return `<table><thead><tr>${keys.map(x=>`<th>${head(x)}</th>`).join('')}${actions?'<th></th>':''}</tr></thead><tbody>${
+            rows.map(r=>`<tr>${keys.map(x=>`<td>${cell(x,r[x],r)}</td>`).join('')}${actions?`<td class="act"><button class="btn sm" data-e="${r.id}">Edit</button><button class="btn sm del" data-d="${r.id}">Delete</button></td>`:''}</tr>`).join('')}</tbody></table>`;
+    }
+
+    async function table(k){
+        const E=ENT[k]; $('#title').textContent=E.label; $('#sub').textContent=`Create, update and remove ${E.label.toLowerCase()}.`;
+        $('#tools').innerHTML=`<button class="btn" id="refresh">Refresh</button><button class="btn pri" id="add">Add ${E.one}</button>`;
+        $('#refresh').onclick=render; $('#add').onclick=()=>openForm(k);
+        let path=E.path, bar='';
+        if(k==='attendance'){
+            if(filter.type==='student'&&filter.id) path=`/attendance/student/${filter.id}`;
+            if(filter.type==='session'&&filter.id) path=`/attendance/session/${filter.id}`;
+            const opts = filter.type==='student' ? cache.students.map(s=>[s.id,label(s)]) : filter.type==='session' ? cache.sessions.map(s=>[s.id,s._n]) : [];
+            bar=`<div class="filters"><label style="margin:0">View by <select id="ft"><option value="all">All records</option><option value="student"${filter.type==='student'?' selected':''}>Student</option><option value="session"${filter.type==='session'?' selected':''}>Session</option></select></label>
+      ${filter.type!=='all'?`<select id="fid" aria-label="Filter value"><option value="">Choose…</option>${opts.map(([v,t])=>`<option value="${v}"${String(v)===String(filter.id)?' selected':''}>${esc(t)}</option>`).join('')}</select>`:''}</div>`;
+        }
+        const rows = await list(k, path); cache[k+'_rows']=rows;
+        $('#view').innerHTML=`<div class="card">${bar}<div class="wrap">${grid(rows,k)}</div></div>`;
+        if(bar){ $('#ft').onchange=e=>{filter={type:e.target.value,id:''};render()}; const f=$('#fid'); if(f) f.onchange=e=>{filter.id=e.target.value;render()}; }
+        $('#view').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>openForm(k,rows.find(r=>String(r.id)===b.dataset.e)));
+        $('#view').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>remove(k,b.dataset.d));
+    }
+
+    function openForm(k,row){
+        const E=ENT[k], edit=!!row, FF=formFields(k);
+        const val=f=>{ if(!row) return ''; const v=row[f.k]; if(v!=null&&typeof v!=='object') return v; return v?.id ?? row[f.k.replace(/Id$/,'')]?.id ?? ''; };
+        const input=f=>{
+            const v=val(f), r=f.req?'required':'';
+            if(f.t==='fk') return `<select name="${f.k}" ${r}><option value="">Select…</option>${(cache[f.ref]||[]).map(o=>`<option value="${o.id}"${String(o.id)===String(v)?' selected':''}>${esc(f.ref==='sessions'?o._n:label(o))}</option>`).join('')}</select>`;
+            if(f.t==='status'||f.t==='enum') return `<select name="${f.k}" ${r}>${(f.opts||STATUSES).map(s=>`<option${s===v?' selected':''}>${s}</option>`).join('')}</select>`;
+            return `<input name="${f.k}" type="${f.t}" value="${esc(v)}" ${r}>`;
+        };
+        $('#form').innerHTML=`<h2>${edit?'Edit':'Add'} ${E.one}</h2>${FF.map(f=>`<label>${f.l}${input(f)}</label>`).join('')}
+    <div class="foot"><button type="button" class="btn" onclick="$('#dlg').close()">Cancel</button><button type="submit" class="btn pri" id="save">${edit?'Save changes':'Add '+E.one}</button></div>`;
+        $('#form').onsubmit=async ev=>{
+            ev.preventDefault();
+            const fd=Object.fromEntries(new FormData($('#form')));
+            FF.forEach(f=>{
+                if(f.t==='fk'){ const n=Number(fd[f.k]); fd[f.k]=f.nested?{id:n}:n; if(f.both) fd[f.k.replace(/Id$/,'')]={id:n}; }
+                else if(f.t==='number') fd[f.k]=Number(fd[f.k]);
+            });
+            if(edit) fd.id=row.id;
+            try{
+                await api(edit?`${E.path}/${row.id}`:E.path,{method:edit?'PUT':'POST',body:JSON.stringify(toPayload(k,fd))});
+                $('#dlg').close(); toast(edit?'Changes saved':'Added '+E.one); render();
+            }catch(e){ toast(e.message,1); }
+        };
+        $('#dlg').showModal();
+    }
+    async function remove(k,id){
+        if(!confirm(`Delete this ${ENT[k].one}? This can't be undone.`)) return;
+        try{ await api(`${ENT[k].path}/${id}`,{method:'DELETE'}); toast('Deleted '+ENT[k].one); render(); }catch(e){ toast(e.message,1); }
+    }
+
+    const host = location.hostname || 'localhost';
+    const proto = location.protocol.startsWith('http') ? location.protocol : 'http:';
+    $('#base').value = `${proto}//${host}:8080`;
+    $('#base').onchange=()=>{localStorage.setItem('apiBase',$('#base').value);render()};
+    render();
+</script>
+</body>
+</html>
